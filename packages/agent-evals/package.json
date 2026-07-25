@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./index.ts"
   },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@zero-agent/contracts": "workspace:*",

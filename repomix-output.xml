@@ -43,32 +43,23 @@ The content is organized as follows:
 apps/
   agent-worker/
     src/
-      adapters/
-        .gitkeep.ts
       agents/
         coder-agent/
+          tools/
+            file-edit.ts
+            web-search.ts
           index.ts
           policy.ts
           prompt.ts
         planner-agent/
+          tools/
+            web-search.ts
           index.ts
           policy.ts
           prompt.ts
-      evals/
-        .gitkeep.ts
-      guardrails/
-        .gitkeep.ts
-      memory/
-        .gitkeep.ts
-      orchestration/
-        .gitkeep.ts
       runtime/
         .gitkeep.ts
-      tools/
-        file-edit/
-          index.ts
-        web-search/
-          index.ts
+        index.ts
       index.ts
     package.json
     tsconfig.json
@@ -124,9 +115,47 @@ apps/
 docs/
   adr/
     0001-monorepo-structure.md
+    0002-agent-capability-extraction.md
 infra/
   .gitkeep
 packages/
+  agent-evals/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  agent-framework/
+    src/
+      agent/
+        index.ts
+      guardrails/
+        index.ts
+      handoff/
+        index.ts
+      runner/
+        index.ts
+      tools/
+        index.ts
+      tracing/
+        index.ts
+      index.ts
+    package.json
+    tsconfig.json
+  agent-memory/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  agent-providers/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  agent-rag/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
   config/
     src/
       index.ts
@@ -135,6 +164,8 @@ packages/
   contracts/
     src/
       agent-events/
+        index.ts
+      agent-protocol/
         index.ts
       chat/
         index.ts
@@ -150,6 +181,8 @@ packages/
       db/
         index.ts
       queue/
+        index.ts
+      vector/
         index.ts
       index.ts
     package.json
@@ -193,21 +226,731 @@ turbo.json
 <files>
 This section contains the contents of the repository's files.
 
-<file path="apps/agent-worker/src/adapters/.gitkeep.ts">
-// adapters — LLM provider abstraction (OpenAI, Anthropic, etc.)
+<file path="apps/agent-worker/src/agents/coder-agent/tools/file-edit.ts">
+import type { Tool } from "@zero-agent/agent-framework/tools";
+
+interface FileEditInput {
+  path: string;
+  content: string;
+}
+
+export function createFileEditTool(): Tool<FileEditInput, void> {
+  return {
+    name: "file-edit",
+    description: "Edit a file on disk. Has side effects — requires human confirmation.",
+    risk: { sideEffects: true, requiresConfirmation: true },
+    async execute(_params) {
+      throw new Error("not implemented — wire up file system operations");
+    },
+  };
+}
+</file>
+
+<file path="apps/agent-worker/src/agents/coder-agent/tools/web-search.ts">
+import type { Tool } from "@zero-agent/agent-framework/tools";
+
+export function createWebSearchTool(): Tool<string, string> {
+  return {
+    name: "web-search",
+    description: "Search the web for information. Read-only — no confirmation needed.",
+    risk: { sideEffects: false, requiresConfirmation: false },
+    async execute(_query: string) {
+      throw new Error("not implemented — wire up search provider");
+    },
+  };
+}
+</file>
+
+<file path="apps/agent-worker/src/agents/planner-agent/tools/web-search.ts">
+import type { Tool } from "@zero-agent/agent-framework/tools";
+
+export function createWebSearchTool(): Tool<string, string> {
+  return {
+    name: "web-search",
+    description: "Search the web for information. Read-only — no confirmation needed.",
+    risk: { sideEffects: false, requiresConfirmation: false },
+    async execute(_query: string) {
+      throw new Error("not implemented — wire up search provider");
+    },
+  };
+}
+</file>
+
+<file path="apps/agent-worker/src/runtime/index.ts">
+import { createLogger } from "@zero-agent/logger";
+import { createQueueClient } from "@zero-agent/data-clients/queue";
+import { run } from "@zero-agent/agent-framework/runner";
+import { coderAgentDefinition } from "../agents/coder-agent/index.js";
+import { plannerAgentDefinition } from "../agents/planner-agent/index.js";
+
+const logger = createLogger("agent-worker:runtime");
+
+export async function startRuntime(): Promise<void> {
+  const mqUrl = process.env["MQ_URL"] ?? "memory://localhost";
+  const queue = createQueueClient(mqUrl);
+
+  logger.info("subscribing to agent task queue");
+
+  await queue.subscribe("agent-tasks", async (message) => {
+    logger.info("received task", { message });
+
+    const agent = coderAgentDefinition;
+    const result = await run(agent, String(message));
+
+    logger.info("task completed", { agent: result.agentName, steps: result.steps });
+  });
+
+  logger.info("agent-worker runtime started", {
+    agents: [coderAgentDefinition.name, plannerAgentDefinition.name],
+  });
+}
+</file>
+
+<file path="docs/adr/0002-agent-capability-extraction.md">
+# ADR-0002: Agent Capability Extraction into Framework Packages
+
+## Status
+Accepted
+
+## Context
+All agent capabilities (adapters, agents, evals, guardrails, memory, orchestration, runtime, tools) were colocated inside `apps/agent-worker`. While the app/package boundary was correct, the framework-level logic was trapped inside a single deployment unit — making it impossible to reuse from a CLI playground, a serverless deployment target, or `apps/api` (for one-shot model calls) without code duplication or boundary violations.
+
+Additionally:
+- `requireHumanConfirmation` was an agent-level boolean, but tools have different risk profiles (file-edit has side effects, web-search is read-only).
+- No real-time streaming protocol existed for the web/chat feature — only async MQ lifecycle events.
+- No RAG / vector retrieval capability was defined.
+- Evals harness and test datasets were not separated.
+
+## Decision
+Extract reusable agent framework logic from `apps/agent-worker` into five independent packages:
+
+| Package | Responsibility | Layer |
+|---------|---------------|-------|
+| `agent-framework` | Core abstractions: Agent, Tool, Runner, Handoff, Guardrail, Tracing | L4 |
+| `agent-providers` | LLM provider governance: routing, retry, cost metering | L2 |
+| `agent-memory` | Session/long-term memory store adapter | L3 |
+| `agent-rag` | Chunking, embedding, vector retrieval | L3 |
+| `agent-evals` | Eval harness + scorer (never importable at runtime) | L4.5 |
+
+`apps/agent-worker` is reduced to:
+- `agents/` — concrete agent definitions (prompt + policy + tool wiring)
+- `runtime/` — deployment wiring (MQ subscription, Runner assembly, event publishing)
+
+Key interface changes:
+- `Tool.risk: { sideEffects, requiresConfirmation }` replaces agent-level `requireHumanConfirmation`
+- `Guardrail.checkInput()` / `checkOutput()` operate per-tool-call, not per-agent
+- `contracts/agent-protocol` adds real-time streaming events (token_delta, tool_call_*, approval_*)
+- `data-clients/vector` adds vector DB client interface
+- `agent-evals` is excluded from all packages' `allow` list — `default: "disallow"` prevents runtime imports
+
+Dependency layers extended from L0–L3 to L0–L5:
+- L0: contracts, utils, config
+- L1: logger, observability, ui
+- L2: data-clients, sdk, agent-providers
+- L3: agent-memory, agent-rag
+- L4: agent-framework
+- L4.5: agent-evals (eval-only, never runtime)
+- L5: apps/*
+
+`apps/api` is allowed `agent-providers` (for one-shot model calls) but NOT `agent-framework` — full multi-step agent loops remain the exclusive responsibility of `apps/agent-worker`.
+
+## Consequences
+- Agent capabilities are independently versioned, testable, and composable
+- New deployment targets (CLI, serverless) can consume framework packages without pulling app-level code
+- Tool-level risk granularity enables fine-grained human confirmation and guardrail policies
+- Real-time protocol enables streaming UI in web/chat feature
+- `agent-evals` isolation prevents eval harness from leaking into production bundles
+- Breaking changes to `agent-framework` and `agent-providers` require cross-team review (@zero-agent/ai + @zero-agent/platform)
+</file>
+
+<file path="packages/agent-evals/src/index.ts">
+import { createLogger } from "@zero-agent/logger";
+import type { AgentDefinition } from "@zero-agent/agent-framework/agent";
+
+const logger = createLogger("agent-evals");
+
+export interface EvalCase {
+  name: string;
+  input: string;
+  expectedOutput?: string;
+  scoringCriteria?: string;
+}
+
+export interface EvalResult {
+  caseName: string;
+  passed: boolean;
+  score: number;
+  details?: string;
+}
+
+export interface Scorer {
+  name: string;
+  score(actual: string, expected?: string): Promise<number>;
+}
+
+export async function runEvalSuite(
+  _agent: AgentDefinition,
+  _cases: EvalCase[],
+  _scorer: Scorer,
+): Promise<EvalResult[]> {
+  logger.info("eval suite starting", { caseCount: _cases.length, scorer: _scorer.name });
+  throw new Error("not implemented — wire up eval runner");
+}
+</file>
+
+<file path="packages/agent-evals/package.json">
+{
+  "name": "@zero-agent/agent-evals",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/agent-providers": "workspace:*",
+    "@zero-agent/agent-memory": "workspace:*",
+    "@zero-agent/agent-rag": "workspace:*",
+    "@zero-agent/agent-framework": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/agent-evals/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/agent-framework/src/agent/index.ts">
+import type { Tool } from "../tools/index.js";
+import type { Guardrail } from "../guardrails/index.js";
+
+export interface AgentDefinition {
+  name: string;
+  systemPrompt: string;
+  tools: Tool[];
+  guardrails: Guardrail[];
+  maxSteps: number;
+  handoffTo?: AgentDefinition[];
+}
+</file>
+
+<file path="packages/agent-framework/src/guardrails/index.ts">
+export interface GuardrailResult {
+  tripwireTriggered: boolean;
+  reason?: string;
+}
+
+export interface Guardrail {
+  name: string;
+  checkInput?(input: unknown): Promise<GuardrailResult>;
+  checkOutput?(output: unknown): Promise<GuardrailResult>;
+}
+</file>
+
+<file path="packages/agent-framework/src/handoff/index.ts">
+import type { AgentDefinition } from "../agent/index.js";
+
+export interface HandoffResult {
+  fromAgent: string;
+  toAgent: string;
+  context: string;
+}
+
+export function resolveHandoff(
+  _source: AgentDefinition,
+  _targetName: string,
+): AgentDefinition | undefined {
+  return _source.handoffTo?.find((a) => a.name === _targetName);
+}
+</file>
+
+<file path="packages/agent-framework/src/runner/index.ts">
+import { createLogger } from "@zero-agent/logger";
+import type { AgentDefinition } from "../agent/index.js";
+
+const logger = createLogger("agent-framework:runner");
+
+export interface RunResult {
+  agentName: string;
+  steps: number;
+  output: string;
+}
+
+export async function run(_agent: AgentDefinition, _input: string): Promise<RunResult> {
+  logger.info("runner invoked", { agent: _agent.name });
+  throw new Error("not implemented — wire up the execution loop");
+}
+</file>
+
+<file path="packages/agent-framework/src/tools/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("agent-framework:tools");
+
+export interface ToolRiskLevel {
+  sideEffects: boolean;
+  requiresConfirmation: boolean;
+}
+
+export interface Tool<Input = unknown, Output = unknown> {
+  name: string;
+  description: string;
+  risk: ToolRiskLevel;
+  execute(input: Input): Promise<Output>;
+}
+
+export interface ToolRegistry {
+  get(name: string): Tool | undefined;
+  list(): Tool[];
+}
+
+export function createToolRegistry(tools: Tool[] = []): ToolRegistry {
+  const map = new Map(tools.map((t) => [t.name, t]));
+  logger.info("tool registry created", { toolCount: map.size });
+  return {
+    get(name: string) {
+      return map.get(name);
+    },
+    list() {
+      return [...map.values()];
+    },
+  };
+}
+</file>
+
+<file path="packages/agent-framework/src/tracing/index.ts">
+import { startSpan } from "@zero-agent/observability";
+
+export async function traceAgentStep<T>(
+  agentName: string,
+  step: number,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const span = startSpan(`agent:${agentName}:step:${step}`, { agent: agentName, step: String(step) });
+  try {
+    const result = await fn();
+    span.end("ok");
+    return result;
+  } catch (error) {
+    span.end("error");
+    throw error;
+  }
+}
+</file>
+
+<file path="packages/agent-framework/src/index.ts">
+export * from "./agent/index.js";
+export * from "./runner/index.js";
+export * from "./tools/index.js";
+export * from "./handoff/index.js";
+export * from "./guardrails/index.js";
+export * from "./tracing/index.js";
+</file>
+
+<file path="packages/agent-framework/package.json">
+{
+  "name": "@zero-agent/agent-framework",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./agent": "./src/agent/index.ts",
+    "./runner": "./src/runner/index.ts",
+    "./tools": "./src/tools/index.ts",
+    "./handoff": "./src/handoff/index.ts",
+    "./guardrails": "./src/guardrails/index.ts",
+    "./tracing": "./src/tracing/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/agent-providers": "workspace:*",
+    "@zero-agent/agent-memory": "workspace:*",
+    "@zero-agent/agent-rag": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/agent-framework/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/agent-memory/src/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("agent-memory");
+
+export interface MemoryEntry {
+  sessionId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string;
+}
+
+export interface MemoryStore {
+  append(entry: MemoryEntry): Promise<void>;
+  getRecent(sessionId: string, limit: number): Promise<MemoryEntry[]>;
+  clear(sessionId: string): Promise<void>;
+}
+
+export function createMemoryStore(): MemoryStore {
+  logger.info("memory store created");
+  return {
+    async append(_entry) {
+      throw new Error("not implemented — wire up data-clients db/cache");
+    },
+    async getRecent(_sessionId, _limit) {
+      throw new Error("not implemented — wire up data-clients db/cache");
+    },
+    async clear(_sessionId) {
+      throw new Error("not implemented — wire up data-clients db/cache");
+    },
+  };
+}
+</file>
+
+<file path="packages/agent-memory/package.json">
+{
+  "name": "@zero-agent/agent-memory",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/agent-memory/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/agent-providers/src/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("agent-providers");
+
+export interface ModelProvider {
+  name: string;
+  complete(input: { messages: unknown[]; tools?: unknown[] }): Promise<unknown>;
+  stream?(input: { messages: unknown[] }): AsyncIterable<unknown>;
+}
+
+export function createModelProvider(_config: { provider: string; apiKey: string }): ModelProvider {
+  logger.info("model provider created", { provider: _config.provider });
+  return {
+    name: _config.provider,
+    async complete(_input) {
+      throw new Error("not implemented — wire up LLM provider");
+    },
+  };
+}
+</file>
+
+<file path="packages/agent-providers/package.json">
+{
+  "name": "@zero-agent/agent-providers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/agent-providers/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/agent-rag/src/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("agent-rag");
+
+export interface RetrievalResult {
+  content: string;
+  score: number;
+  source: string;
+}
+
+export interface RagPipeline {
+  retrieve(query: string, topK?: number): Promise<RetrievalResult[]>;
+  index(document: { content: string; source: string }): Promise<void>;
+}
+
+export function createRagPipeline(): RagPipeline {
+  logger.info("rag pipeline created");
+  return {
+    async retrieve(_query, _topK) {
+      throw new Error("not implemented — wire up embedding + vector search");
+    },
+    async index(_document) {
+      throw new Error("not implemented — wire up chunking + embedding + vector upsert");
+    },
+  };
+}
+</file>
+
+<file path="packages/agent-rag/package.json">
+{
+  "name": "@zero-agent/agent-rag",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/agent-providers": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/agent-rag/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/contracts/src/agent-protocol/index.ts">
+import { z } from "zod";
+
+/**
+ * Real-time streaming protocol for web/chat consumption.
+ * Transport-agnostic (SSE, WebSocket, etc.) — only message schemas are defined here.
+ */
+export const TokenDeltaSchema = z.object({
+  type: z.literal("agent.protocol.token_delta"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    delta: z.string(),
+  }),
+});
+
+export const ToolCallStartedSchema = z.object({
+  type: z.literal("agent.protocol.tool_call_started"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    toolName: z.string(),
+    input: z.unknown(),
+    startedAt: z.string().datetime(),
+  }),
+});
+
+export const ToolCallCompletedSchema = z.object({
+  type: z.literal("agent.protocol.tool_call_completed"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    toolName: z.string(),
+    output: z.unknown(),
+    completedAt: z.string().datetime(),
+  }),
+});
+
+export const StepStartedSchema = z.object({
+  type: z.literal("agent.protocol.step_started"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    stepNumber: z.number().int().nonnegative(),
+    startedAt: z.string().datetime(),
+  }),
+});
+
+export const StepCompletedSchema = z.object({
+  type: z.literal("agent.protocol.step_completed"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    stepNumber: z.number().int().nonnegative(),
+    completedAt: z.string().datetime(),
+  }),
+});
+
+export const ApprovalRequestedSchema = z.object({
+  type: z.literal("agent.protocol.approval_requested"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    toolName: z.string(),
+    input: z.unknown(),
+    reason: z.string().optional(),
+    requestedAt: z.string().datetime(),
+  }),
+});
+
+export const ApprovalResolvedSchema = z.object({
+  type: z.literal("agent.protocol.approval_resolved"),
+  payload: z.object({
+    sessionId: z.string().uuid(),
+    toolName: z.string(),
+    approved: z.boolean(),
+    resolvedAt: z.string().datetime(),
+  }),
+});
+
+export const AgentProtocolEventSchema = z.discriminatedUnion("type", [
+  TokenDeltaSchema,
+  ToolCallStartedSchema,
+  ToolCallCompletedSchema,
+  StepStartedSchema,
+  StepCompletedSchema,
+  ApprovalRequestedSchema,
+  ApprovalResolvedSchema,
+]);
+
+export type TokenDelta = z.infer<typeof TokenDeltaSchema>;
+export type ToolCallStarted = z.infer<typeof ToolCallStartedSchema>;
+export type ToolCallCompleted = z.infer<typeof ToolCallCompletedSchema>;
+export type StepStarted = z.infer<typeof StepStartedSchema>;
+export type StepCompleted = z.infer<typeof StepCompletedSchema>;
+export type ApprovalRequested = z.infer<typeof ApprovalRequestedSchema>;
+export type ApprovalResolved = z.infer<typeof ApprovalResolvedSchema>;
+export type AgentProtocolEvent = z.infer<typeof AgentProtocolEventSchema>;
+</file>
+
+<file path="packages/data-clients/src/vector/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("data-clients:vector");
+
+export interface VectorRecord {
+  id: string;
+  embedding: number[];
+  metadata: Record<string, unknown>;
+}
+
+export interface VectorQueryResult {
+  id: string;
+  score: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface VectorClient {
+  upsert(records: VectorRecord[]): Promise<void>;
+  query(embedding: number[], topK: number): Promise<VectorQueryResult[]>;
+  delete(ids: string[]): Promise<void>;
+}
+
+export function createVectorClient(_url: string): VectorClient {
+  logger.info("vector client created", { url: _url });
+  return {
+    async upsert(_records) {
+      throw new Error("not implemented — wire up your vector DB driver");
+    },
+    async query(_embedding, _topK) {
+      throw new Error("not implemented — wire up your vector DB driver");
+    },
+    async delete(_ids) {
+      throw new Error("not implemented — wire up your vector DB driver");
+    },
+  };
+}
 </file>
 
 <file path="apps/agent-worker/src/agents/coder-agent/index.ts">
 export { CODER_SYSTEM_PROMPT } from "./prompt.js";
-export { coderPolicy } from "./policy.js";
+export { coderAgentDefinition } from "./policy.js";
 </file>
 
 <file path="apps/agent-worker/src/agents/coder-agent/policy.ts">
-export const coderPolicy = {
+import type { AgentDefinition } from "@zero-agent/agent-framework/agent";
+import { createFileEditTool } from "./tools/file-edit.js";
+import { createWebSearchTool } from "./tools/web-search.js";
+
+export const coderAgentDefinition: AgentDefinition = {
+  name: "coder",
+  systemPrompt: "",
+  tools: [createFileEditTool(), createWebSearchTool()],
+  guardrails: [],
   maxSteps: 50,
-  allowedTools: ["file-edit", "web-search"],
-  requireHumanConfirmation: true,
-} as const;
+};
 </file>
 
 <file path="apps/agent-worker/src/agents/coder-agent/prompt.ts">
@@ -217,15 +960,20 @@ Output structured diffs with file paths and content.`;
 
 <file path="apps/agent-worker/src/agents/planner-agent/index.ts">
 export { PLANNER_SYSTEM_PROMPT } from "./prompt.js";
-export { plannerPolicy } from "./policy.js";
+export { plannerAgentDefinition } from "./policy.js";
 </file>
 
 <file path="apps/agent-worker/src/agents/planner-agent/policy.ts">
-export const plannerPolicy = {
+import type { AgentDefinition } from "@zero-agent/agent-framework/agent";
+import { createWebSearchTool } from "./tools/web-search.js";
+
+export const plannerAgentDefinition: AgentDefinition = {
+  name: "planner",
+  systemPrompt: "",
+  tools: [createWebSearchTool()],
+  guardrails: [],
   maxSteps: 20,
-  allowedTools: ["web-search"],
-  requireHumanConfirmation: false,
-} as const;
+};
 </file>
 
 <file path="apps/agent-worker/src/agents/planner-agent/prompt.ts">
@@ -233,71 +981,19 @@ export const PLANNER_SYSTEM_PROMPT = `You are a planning agent. Given a task, br
 Output a JSON array of steps, each with { id, description, dependsOn? }.`;
 </file>
 
-<file path="apps/agent-worker/src/evals/.gitkeep.ts">
-// evals — prompt/agent behavior regression test suite.
-// All prompt and policy changes MUST pass evals before merge.
-// Run: pnpm evals
-</file>
-
-<file path="apps/agent-worker/src/guardrails/.gitkeep.ts">
-// guardrails — tool permission checks, privilege escalation interception,
-// human-confirmation gates for destructive actions
-</file>
-
-<file path="apps/agent-worker/src/memory/.gitkeep.ts">
-// memory — reads/writes via data-clients, no direct db connections
-</file>
-
-<file path="apps/agent-worker/src/orchestration/.gitkeep.ts">
-// orchestration — multi-agent coordination logic
-</file>
-
 <file path="apps/agent-worker/src/runtime/.gitkeep.ts">
 // agent runtime — the core execution loop for agent steps
 </file>
 
-<file path="apps/agent-worker/src/tools/file-edit/index.ts">
-export interface FileEditTool {
-  name: "file-edit";
-  execute(params: { path: string; content: string }): Promise<void>;
-}
-
-export function createFileEditTool(): FileEditTool {
-  return {
-    name: "file-edit",
-    async execute(_params) {
-      throw new Error("not implemented — wire up file system operations");
-    },
-  };
-}
-</file>
-
-<file path="apps/agent-worker/src/tools/web-search/index.ts">
-export interface WebSearchTool {
-  name: "web-search";
-  execute(query: string): Promise<string>;
-}
-
-export function createWebSearchTool(): WebSearchTool {
-  return {
-    name: "web-search",
-    async execute(_query: string) {
-      throw new Error("not implemented — wire up search provider");
-    },
-  };
-}
-</file>
-
 <file path="apps/agent-worker/src/index.ts">
 import { createLogger } from "@zero-agent/logger";
+import { startRuntime } from "./runtime/index.js";
 
 const logger = createLogger("agent-worker");
 
 logger.info("agent-worker starting");
 
-// TODO: subscribe to MQ events from contracts/agent-events
-// TODO: initialize agent runtime
-// TODO: wire up orchestration loop
+await startRuntime();
 </file>
 
 <file path="apps/agent-worker/package.json">
@@ -321,7 +1017,11 @@ logger.info("agent-worker starting");
     "@zero-agent/sdk": "workspace:*",
     "@zero-agent/logger": "workspace:*",
     "@zero-agent/observability": "workspace:*",
-    "@zero-agent/config": "workspace:*"
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/agent-framework": "workspace:*",
+    "@zero-agent/agent-providers": "workspace:*",
+    "@zero-agent/agent-memory": "workspace:*",
+    "@zero-agent/agent-rag": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -829,6 +1529,7 @@ export type CreateUser = z.infer<typeof CreateUserSchema>;
 export * from "./user/index.js";
 export * from "./chat/index.js";
 export * from "./agent-events/index.js";
+export * from "./agent-protocol/index.js";
 </file>
 
 <file path="packages/contracts/package.json">
@@ -841,7 +1542,8 @@ export * from "./agent-events/index.js";
     ".": "./src/index.ts",
     "./user": "./src/user/index.ts",
     "./chat": "./src/chat/index.ts",
-    "./agent-events": "./src/agent-events/index.ts"
+    "./agent-events": "./src/agent-events/index.ts",
+    "./agent-protocol": "./src/agent-protocol/index.ts"
   },
   "scripts": {
     "build": "tsc",
@@ -936,6 +1638,7 @@ export function createQueueClient(url: string): QueueClient {
 export * from "./db/index.js";
 export * from "./cache/index.js";
 export * from "./queue/index.js";
+export * from "./vector/index.js";
 </file>
 
 <file path="packages/data-clients/package.json">
@@ -948,7 +1651,8 @@ export * from "./queue/index.js";
     ".": "./src/index.ts",
     "./db": "./src/db/index.ts",
     "./cache": "./src/cache/index.ts",
-    "./queue": "./src/queue/index.ts"
+    "./queue": "./src/queue/index.ts",
+    "./vector": "./src/vector/index.ts"
   },
   "scripts": {
     "build": "tsc",
@@ -1316,7 +2020,7 @@ dist
 /apps/agent-worker/                    @zero-agent/ai
 /apps/worker/                          @zero-agent/backend
 
-# Shared packages
+# Shared packages — foundation
 /packages/contracts/                   @zero-agent/platform
 /packages/data-clients/                @zero-agent/platform
 /packages/sdk/                         @zero-agent/platform
@@ -1325,6 +2029,13 @@ dist
 /packages/logger/                      @zero-agent/platform
 /packages/observability/               @zero-agent/platform
 /packages/utils/                       @zero-agent/platform
+
+# Shared packages — agent capabilities
+/packages/agent-framework/             @zero-agent/ai
+/packages/agent-providers/             @zero-agent/ai
+/packages/agent-memory/                @zero-agent/ai
+/packages/agent-rag/                   @zero-agent/ai
+/packages/agent-evals/                 @zero-agent/ai
 
 # Infra & CI
 /infra/                                @zero-agent/platform
@@ -1339,10 +2050,13 @@ import boundaries from "eslint-plugin-boundaries";
 /**
  * Dependency layer rules (enforced in CI):
  *
- * L0  contracts, utils, config        → no internal deps
- * L1  logger, observability, ui        → L0 only
- * L2  data-clients, sdk                → L0 + L1
- * L3  apps/*                           → L0–L2 packages, zero cross-app deps
+ * L0    contracts, utils, config                          → no internal deps
+ * L1    logger, observability, ui                         → L0 only
+ * L2    data-clients, sdk, agent-providers                → L0 + L1
+ * L3    agent-memory, agent-rag                           → L0 + L1 + L2
+ * L4    agent-framework                                   → L0 + L1 + L2 + L3
+ * L4.5  agent-evals                                       → L0–L4 (never importable at runtime)
+ * L5    apps/*                                            → packages as allowed below, zero cross-app deps
  */
 export default [
   {
@@ -1360,7 +2074,15 @@ export default [
         // L2
         { type: "pkg-data-clients", pattern: "packages/data-clients/*" },
         { type: "pkg-sdk", pattern: "packages/sdk/*" },
-        // L3 — apps
+        { type: "pkg-agent-providers", pattern: "packages/agent-providers/*" },
+        // L3
+        { type: "pkg-agent-memory", pattern: "packages/agent-memory/*" },
+        { type: "pkg-agent-rag", pattern: "packages/agent-rag/*" },
+        // L4
+        { type: "pkg-agent-framework", pattern: "packages/agent-framework/*" },
+        // L4.5
+        { type: "pkg-agent-evals", pattern: "packages/agent-evals/*" },
+        // L5 — apps
         { type: "app-web", pattern: "apps/web/*" },
         { type: "app-api", pattern: "apps/api/*" },
         { type: "app-agent-worker", pattern: "apps/agent-worker/*" },
@@ -1396,7 +2118,52 @@ export default [
                 "pkg-logger", "pkg-observability",
               ],
             },
-            // L3: apps can depend on any package, but NOT on each other
+            {
+              from: "pkg-agent-providers",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+              ],
+            },
+            // L3: L0 + L1 + L2
+            {
+              from: "pkg-agent-memory",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-data-clients",
+              ],
+            },
+            {
+              from: "pkg-agent-rag",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-data-clients", "pkg-agent-providers",
+              ],
+            },
+            // L4: L0 + L1 + L2 + L3
+            {
+              from: "pkg-agent-framework",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-agent-providers", "pkg-agent-memory", "pkg-agent-rag",
+              ],
+            },
+            // L4.5: agent-evals can depend on everything below it,
+            // but nothing else is allowed to import agent-evals (default: disallow).
+            {
+              from: "pkg-agent-evals",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-data-clients", "pkg-sdk",
+                "pkg-agent-providers", "pkg-agent-memory", "pkg-agent-rag",
+                "pkg-agent-framework",
+              ],
+            },
+            // L5: apps
             {
               from: "app-web",
               allow: [
@@ -1411,6 +2178,7 @@ export default [
                 "pkg-contracts", "pkg-utils", "pkg-config",
                 "pkg-logger", "pkg-observability",
                 "pkg-data-clients", "pkg-sdk",
+                "pkg-agent-providers",
               ],
             },
             {
@@ -1419,6 +2187,8 @@ export default [
                 "pkg-contracts", "pkg-utils", "pkg-config",
                 "pkg-logger", "pkg-observability",
                 "pkg-data-clients", "pkg-sdk",
+                "pkg-agent-providers", "pkg-agent-memory", "pkg-agent-rag",
+                "pkg-agent-framework",
               ],
             },
             {
@@ -1512,6 +2282,9 @@ packages:
       "dependsOn": ["^build"]
     },
     "test": {
+      "dependsOn": ["^build"]
+    },
+    "evals": {
       "dependsOn": ["^build"]
     }
   }
