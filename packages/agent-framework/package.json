@@ -1,0 +1,33 @@
+{
+  "name": "@zero-agent/agent-framework",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./agent": "./src/agent/index.ts",
+    "./runner": "./src/runner/index.ts",
+    "./tools": "./src/tools/index.ts",
+    "./handoff": "./src/handoff/index.ts",
+    "./guardrails": "./src/guardrails/index.ts",
+    "./tracing": "./src/tracing/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/agent-providers": "workspace:*",
+    "@zero-agent/agent-memory": "workspace:*",
+    "@zero-agent/agent-rag": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}

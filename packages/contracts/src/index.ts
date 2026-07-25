@@ -5,3 +5,4 @@
 export * from "./user/index.js";
 export * from "./chat/index.js";
 export * from "./agent-events/index.js";
+export * from "./agent-protocol/index.js";

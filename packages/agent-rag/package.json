@@ -1,14 +1,10 @@
 {
-  "name": "@zero-agent/data-clients",
+  "name": "@zero-agent/agent-rag",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./db": "./src/db/index.ts",
-    "./cache": "./src/cache/index.ts",
-    "./queue": "./src/queue/index.ts",
-    "./vector": "./src/vector/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "build": "tsc",
@@ -16,9 +12,13 @@
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
     "@zero-agent/config": "workspace:*",
     "@zero-agent/logger": "workspace:*",
-    "@zero-agent/observability": "workspace:*"
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/agent-providers": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0"

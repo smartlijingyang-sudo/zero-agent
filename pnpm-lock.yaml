@@ -29,6 +29,18 @@ importers:
 
   apps/agent-worker:
     dependencies:
+      '@zero-agent/agent-framework':
+        specifier: workspace:*
+        version: link:../../packages/agent-framework
+      '@zero-agent/agent-memory':
+        specifier: workspace:*
+        version: link:../../packages/agent-memory
+      '@zero-agent/agent-providers':
+        specifier: workspace:*
+        version: link:../../packages/agent-providers
+      '@zero-agent/agent-rag':
+        specifier: workspace:*
+        version: link:../../packages/agent-rag
       '@zero-agent/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -131,6 +143,146 @@ importers:
       '@zero-agent/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+
+  packages/agent-evals:
+    dependencies:
+      '@zero-agent/agent-framework':
+        specifier: workspace:*
+        version: link:../agent-framework
+      '@zero-agent/agent-memory':
+        specifier: workspace:*
+        version: link:../agent-memory
+      '@zero-agent/agent-providers':
+        specifier: workspace:*
+        version: link:../agent-providers
+      '@zero-agent/agent-rag':
+        specifier: workspace:*
+        version: link:../agent-rag
+      '@zero-agent/config':
+        specifier: workspace:*
+        version: link:../config
+      '@zero-agent/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@zero-agent/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@zero-agent/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@zero-agent/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+
+  packages/agent-framework:
+    dependencies:
+      '@zero-agent/agent-memory':
+        specifier: workspace:*
+        version: link:../agent-memory
+      '@zero-agent/agent-providers':
+        specifier: workspace:*
+        version: link:../agent-providers
+      '@zero-agent/agent-rag':
+        specifier: workspace:*
+        version: link:../agent-rag
+      '@zero-agent/config':
+        specifier: workspace:*
+        version: link:../config
+      '@zero-agent/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@zero-agent/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@zero-agent/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@zero-agent/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+
+  packages/agent-memory:
+    dependencies:
+      '@zero-agent/config':
+        specifier: workspace:*
+        version: link:../config
+      '@zero-agent/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@zero-agent/data-clients':
+        specifier: workspace:*
+        version: link:../data-clients
+      '@zero-agent/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@zero-agent/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@zero-agent/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+
+  packages/agent-providers:
+    dependencies:
+      '@zero-agent/config':
+        specifier: workspace:*
+        version: link:../config
+      '@zero-agent/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@zero-agent/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@zero-agent/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@zero-agent/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.1
+
+  packages/agent-rag:
+    dependencies:
+      '@zero-agent/agent-providers':
+        specifier: workspace:*
+        version: link:../agent-providers
+      '@zero-agent/config':
+        specifier: workspace:*
+        version: link:../config
+      '@zero-agent/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@zero-agent/data-clients':
+        specifier: workspace:*
+        version: link:../data-clients
+      '@zero-agent/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@zero-agent/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@zero-agent/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@types/node':
         specifier: ^22.10.0

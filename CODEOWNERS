@@ -14,7 +14,7 @@
 /apps/agent-worker/                    @zero-agent/ai
 /apps/worker/                          @zero-agent/backend
 
-# Shared packages
+# Shared packages — foundation
 /packages/contracts/                   @zero-agent/platform
 /packages/data-clients/                @zero-agent/platform
 /packages/sdk/                         @zero-agent/platform
@@ -23,6 +23,13 @@
 /packages/logger/                      @zero-agent/platform
 /packages/observability/               @zero-agent/platform
 /packages/utils/                       @zero-agent/platform
+
+# Shared packages — agent capabilities
+/packages/agent-framework/             @zero-agent/ai
+/packages/agent-providers/             @zero-agent/ai
+/packages/agent-memory/                @zero-agent/ai
+/packages/agent-rag/                   @zero-agent/ai
+/packages/agent-evals/                 @zero-agent/ai
 
 # Infra & CI
 /infra/                                @zero-agent/platform
