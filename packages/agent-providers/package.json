@@ -16,7 +16,8 @@
     "@zero-agent/utils": "workspace:*",
     "@zero-agent/config": "workspace:*",
     "@zero-agent/logger": "workspace:*",
-    "@zero-agent/observability": "workspace:*"
+    "@zero-agent/observability": "workspace:*",
+    "openai": "^4.73.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0"

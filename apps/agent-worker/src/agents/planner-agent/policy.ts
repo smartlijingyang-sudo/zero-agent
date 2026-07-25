@@ -1,10 +1,10 @@
 import type { AgentDefinition } from "@zero-agent/agent-framework/agent";
-import { createWebSearchTool } from "./tools/web-search.js";
+import { PLANNER_SYSTEM_PROMPT } from "./prompt.js";
 
 export const plannerAgentDefinition: AgentDefinition = {
   name: "planner",
-  systemPrompt: "",
-  tools: [createWebSearchTool()],
+  systemPrompt: PLANNER_SYSTEM_PROMPT,
+  tools: [],
   guardrails: [],
   maxSteps: 20,
 };

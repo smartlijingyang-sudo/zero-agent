@@ -24,8 +24,7 @@
     "@zero-agent/logger": "workspace:*",
     "@zero-agent/observability": "workspace:*",
     "@zero-agent/agent-providers": "workspace:*",
-    "@zero-agent/agent-memory": "workspace:*",
-    "@zero-agent/agent-rag": "workspace:*"
+    "@zero-agent/agent-memory": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.0"

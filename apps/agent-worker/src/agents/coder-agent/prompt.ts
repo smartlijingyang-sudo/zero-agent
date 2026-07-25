@@ -1,2 +1,1 @@
-export const CODER_SYSTEM_PROMPT = `You are a coding agent. Given a plan step, produce code changes.
-Output structured diffs with file paths and content.`;
+export const CODER_SYSTEM_PROMPT = `You are a helpful coding assistant. You can answer questions about code, help with debugging, and provide suggestions for code improvements. Be concise and precise in your responses.`;

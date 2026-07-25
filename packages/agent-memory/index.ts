@@ -15,17 +15,26 @@ export interface MemoryStore {
   clear(sessionId: string): Promise<void>;
 }
 
+class InMemoryStore implements MemoryStore {
+  private entries = new Map<string, MemoryEntry[]>();
+
+  async append(entry: MemoryEntry): Promise<void> {
+    const list = this.entries.get(entry.sessionId) ?? [];
+    list.push(entry);
+    this.entries.set(entry.sessionId, list);
+  }
+
+  async getRecent(sessionId: string, limit: number): Promise<MemoryEntry[]> {
+    const list = this.entries.get(sessionId) ?? [];
+    return list.slice(-limit);
+  }
+
+  async clear(sessionId: string): Promise<void> {
+    this.entries.delete(sessionId);
+  }
+}
+
 export function createMemoryStore(): MemoryStore {
-  logger.info("memory store created");
-  return {
-    async append(_entry) {
-      throw new Error("not implemented — wire up data-clients db/cache");
-    },
-    async getRecent(_sessionId, _limit) {
-      throw new Error("not implemented — wire up data-clients db/cache");
-    },
-    async clear(_sessionId) {
-      throw new Error("not implemented — wire up data-clients db/cache");
-    },
-  };
+  logger.info("in-memory store created");
+  return new InMemoryStore();
 }

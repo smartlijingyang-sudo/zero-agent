@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { createLogger } from "@zero-agent/logger";
 
 const logger = createLogger("data-clients:queue");
@@ -7,14 +8,27 @@ export interface QueueClient {
   subscribe(channel: string, handler: (message: unknown) => void | Promise<void>): Promise<void>;
 }
 
+class InMemoryQueueClient implements QueueClient {
+  private emitter = new EventEmitter();
+
+  async publish(channel: string, message: unknown): Promise<void> {
+    logger.debug("publish", { channel });
+    this.emitter.emit(channel, message);
+  }
+
+  async subscribe(
+    channel: string,
+    handler: (message: unknown) => void | Promise<void>,
+  ): Promise<void> {
+    logger.debug("subscribe", { channel });
+    this.emitter.on(channel, handler);
+  }
+}
+
 export function createQueueClient(url: string): QueueClient {
   logger.info("queue client created", { url });
-  return {
-    async publish(_channel, _message) {
-      throw new Error("not implemented — wire up your MQ driver");
-    },
-    async subscribe(_channel, _handler) {
-      throw new Error("not implemented — wire up your MQ driver");
-    },
-  };
+  if (url.startsWith("memory://")) {
+    return new InMemoryQueueClient();
+  }
+  throw new Error(`Unsupported queue URL scheme: ${url}`);
 }
