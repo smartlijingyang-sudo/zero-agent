@@ -1,0 +1,23 @@
+{
+  "name": "@zero-agent/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}

@@ -1,0 +1,1521 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+apps/
+  agent-worker/
+    src/
+      adapters/
+        .gitkeep.ts
+      agents/
+        coder-agent/
+          index.ts
+          policy.ts
+          prompt.ts
+        planner-agent/
+          index.ts
+          policy.ts
+          prompt.ts
+      evals/
+        .gitkeep.ts
+      guardrails/
+        .gitkeep.ts
+      memory/
+        .gitkeep.ts
+      orchestration/
+        .gitkeep.ts
+      runtime/
+        .gitkeep.ts
+      tools/
+        file-edit/
+          index.ts
+        web-search/
+          index.ts
+      index.ts
+    package.json
+    tsconfig.json
+  api/
+    src/
+      common/
+        .gitkeep.ts
+      modules/
+        user/
+          user.controller.ts
+          user.domain.ts
+          user.events.ts
+          user.repo.ts
+          user.service.ts
+      main.ts
+    package.json
+    tsconfig.json
+  web/
+    src/
+      app/
+        layout.tsx
+        page.tsx
+      components/
+        .gitkeep.ts
+      features/
+        auth/
+          components/
+            .gitkeep.ts
+          hooks/
+            .gitkeep.ts
+          api.ts
+          store.ts
+        chat/
+          components/
+            .gitkeep.ts
+          hooks/
+            .gitkeep.ts
+          api.ts
+          store.ts
+      lib/
+        .gitkeep.ts
+      stores/
+        .gitkeep.ts
+    package.json
+    tsconfig.json
+  worker/
+    src/
+      jobs/
+        .gitkeep.ts
+      index.ts
+    package.json
+    tsconfig.json
+docs/
+  adr/
+    0001-monorepo-structure.md
+infra/
+  .gitkeep
+packages/
+  config/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  contracts/
+    src/
+      agent-events/
+        index.ts
+      chat/
+        index.ts
+      user/
+        index.ts
+      index.ts
+    package.json
+    tsconfig.json
+  data-clients/
+    src/
+      cache/
+        index.ts
+      db/
+        index.ts
+      queue/
+        index.ts
+      index.ts
+    package.json
+    tsconfig.json
+  logger/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  observability/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  sdk/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  ui/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+  utils/
+    src/
+      index.ts
+    package.json
+    tsconfig.json
+scripts/
+  check-boundaries.ts
+.gitignore
+CODEOWNERS
+eslint.config.js
+package.json
+pnpm-workspace.yaml
+tsconfig.base.json
+turbo.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="apps/agent-worker/src/adapters/.gitkeep.ts">
+// adapters — LLM provider abstraction (OpenAI, Anthropic, etc.)
+</file>
+
+<file path="apps/agent-worker/src/agents/coder-agent/index.ts">
+export { CODER_SYSTEM_PROMPT } from "./prompt.js";
+export { coderPolicy } from "./policy.js";
+</file>
+
+<file path="apps/agent-worker/src/agents/coder-agent/policy.ts">
+export const coderPolicy = {
+  maxSteps: 50,
+  allowedTools: ["file-edit", "web-search"],
+  requireHumanConfirmation: true,
+} as const;
+</file>
+
+<file path="apps/agent-worker/src/agents/coder-agent/prompt.ts">
+export const CODER_SYSTEM_PROMPT = `You are a coding agent. Given a plan step, produce code changes.
+Output structured diffs with file paths and content.`;
+</file>
+
+<file path="apps/agent-worker/src/agents/planner-agent/index.ts">
+export { PLANNER_SYSTEM_PROMPT } from "./prompt.js";
+export { plannerPolicy } from "./policy.js";
+</file>
+
+<file path="apps/agent-worker/src/agents/planner-agent/policy.ts">
+export const plannerPolicy = {
+  maxSteps: 20,
+  allowedTools: ["web-search"],
+  requireHumanConfirmation: false,
+} as const;
+</file>
+
+<file path="apps/agent-worker/src/agents/planner-agent/prompt.ts">
+export const PLANNER_SYSTEM_PROMPT = `You are a planning agent. Given a task, break it into concrete steps.
+Output a JSON array of steps, each with { id, description, dependsOn? }.`;
+</file>
+
+<file path="apps/agent-worker/src/evals/.gitkeep.ts">
+// evals — prompt/agent behavior regression test suite.
+// All prompt and policy changes MUST pass evals before merge.
+// Run: pnpm evals
+</file>
+
+<file path="apps/agent-worker/src/guardrails/.gitkeep.ts">
+// guardrails — tool permission checks, privilege escalation interception,
+// human-confirmation gates for destructive actions
+</file>
+
+<file path="apps/agent-worker/src/memory/.gitkeep.ts">
+// memory — reads/writes via data-clients, no direct db connections
+</file>
+
+<file path="apps/agent-worker/src/orchestration/.gitkeep.ts">
+// orchestration — multi-agent coordination logic
+</file>
+
+<file path="apps/agent-worker/src/runtime/.gitkeep.ts">
+// agent runtime — the core execution loop for agent steps
+</file>
+
+<file path="apps/agent-worker/src/tools/file-edit/index.ts">
+export interface FileEditTool {
+  name: "file-edit";
+  execute(params: { path: string; content: string }): Promise<void>;
+}
+
+export function createFileEditTool(): FileEditTool {
+  return {
+    name: "file-edit",
+    async execute(_params) {
+      throw new Error("not implemented — wire up file system operations");
+    },
+  };
+}
+</file>
+
+<file path="apps/agent-worker/src/tools/web-search/index.ts">
+export interface WebSearchTool {
+  name: "web-search";
+  execute(query: string): Promise<string>;
+}
+
+export function createWebSearchTool(): WebSearchTool {
+  return {
+    name: "web-search",
+    async execute(_query: string) {
+      throw new Error("not implemented — wire up search provider");
+    },
+  };
+}
+</file>
+
+<file path="apps/agent-worker/src/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("agent-worker");
+
+logger.info("agent-worker starting");
+
+// TODO: subscribe to MQ events from contracts/agent-events
+// TODO: initialize agent runtime
+// TODO: wire up orchestration loop
+</file>
+
+<file path="apps/agent-worker/package.json">
+{
+  "name": "@zero-agent/agent-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "evals": "vitest run --config vitest.evals.config.ts"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/sdk": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "vitest": "^2.1.0"
+  }
+}
+</file>
+
+<file path="apps/agent-worker/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="apps/api/src/common/.gitkeep.ts">
+// api common utilities (middleware, error handling, etc.)
+</file>
+
+<file path="apps/api/src/modules/user/user.controller.ts">
+import { CreateUserSchema } from "@zero-agent/contracts/user";
+import { createLogger } from "@zero-agent/logger";
+import { UserService } from "./user.service.js";
+
+const logger = createLogger("api:user:controller");
+
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  async getUser(id: string) {
+    logger.info("getUser", { id });
+    return this.userService.findById(id);
+  }
+
+  async createUser(input: unknown) {
+    const data = CreateUserSchema.parse(input);
+    logger.info("createUser", { email: data.email });
+    return this.userService.create(data);
+  }
+}
+</file>
+
+<file path="apps/api/src/modules/user/user.domain.ts">
+import type { CreateUser } from "@zero-agent/contracts/user";
+
+/**
+ * Pure business rules — no framework, no db, no side effects.
+ */
+export function validateUser(input: CreateUser): void {
+  if (input.name.trim().length === 0) {
+    throw new Error("User name must not be empty");
+  }
+  if (!input.email.includes("@")) {
+    throw new Error("Invalid email");
+  }
+}
+</file>
+
+<file path="apps/api/src/modules/user/user.events.ts">
+import type { QueueClient } from "@zero-agent/data-clients/queue";
+import type { AgentEvent } from "@zero-agent/contracts/agent-events";
+
+/**
+ * Domain events published to MQ for agent-worker / other modules to consume.
+ * Message format defined by @zero-agent/contracts/agent-events — single source of truth.
+ */
+export class UserEventPublisher {
+  constructor(private readonly queue: QueueClient) {}
+
+  async publish(event: AgentEvent): Promise<void> {
+    await this.queue.publish("user-events", event);
+  }
+}
+</file>
+
+<file path="apps/api/src/modules/user/user.repo.ts">
+import type { CreateUser, User } from "@zero-agent/contracts/user";
+import type { DbClient } from "@zero-agent/data-clients/db";
+
+/**
+ * Infrastructure layer — implements data access.
+ * Depends on data-clients, NOT directly on db drivers.
+ */
+export interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  create(input: CreateUser): Promise<User>;
+}
+
+export function createUserRepository(db: DbClient): UserRepository {
+  return {
+    async findById(id: string) {
+      const rows = await db.query<User>("SELECT * FROM users WHERE id = $1", [id]);
+      return rows[0] ?? null;
+    },
+    async create(input: CreateUser) {
+      const rows = await db.query<User>(
+        "INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *",
+        [input.email, input.name],
+      );
+      return rows[0]!;
+    },
+  };
+}
+</file>
+
+<file path="apps/api/src/modules/user/user.service.ts">
+import { createLogger } from "@zero-agent/logger";
+import type { CreateUser, User } from "@zero-agent/contracts/user";
+import type { UserRepository } from "./user.repo.js";
+import { validateUser } from "./user.domain.js";
+
+const logger = createLogger("api:user:service");
+
+export class UserService {
+  constructor(private readonly userRepo: UserRepository) {}
+
+  async findById(id: string): Promise<User | null> {
+    return this.userRepo.findById(id);
+  }
+
+  async create(input: CreateUser): Promise<User> {
+    validateUser(input);
+    const user = await this.userRepo.create(input);
+    logger.info("user created", { id: user.id });
+    // TODO: publish domain event via user.events.ts → MQ
+    return user;
+  }
+}
+</file>
+
+<file path="apps/api/src/main.ts">
+import { loadEnv } from "@zero-agent/config";
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("api");
+const env = loadEnv();
+
+logger.info("api starting", { port: env.PORT, env: env.NODE_ENV });
+
+// TODO: wire up HTTP framework (hono / fastify / express)
+// TODO: register modules from src/modules/
+</file>
+
+<file path="apps/api/package.json">
+{
+  "name": "@zero-agent/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/config": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "vitest": "^2.1.0"
+  }
+}
+</file>
+
+<file path="apps/api/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="apps/web/src/app/layout.tsx">
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+</file>
+
+<file path="apps/web/src/app/page.tsx">
+export default function Home() {
+  return <h1>Zero Agent</h1>;
+}
+</file>
+
+<file path="apps/web/src/components/.gitkeep.ts">
+// shared components for web app
+</file>
+
+<file path="apps/web/src/features/auth/components/.gitkeep.ts">
+// auth feature components
+</file>
+
+<file path="apps/web/src/features/auth/hooks/.gitkeep.ts">
+// auth feature hooks
+</file>
+
+<file path="apps/web/src/features/auth/api.ts">
+// auth feature api calls via @zero-agent/sdk
+</file>
+
+<file path="apps/web/src/features/auth/store.ts">
+// auth feature state store
+</file>
+
+<file path="apps/web/src/features/chat/components/.gitkeep.ts">
+// chat feature components
+</file>
+
+<file path="apps/web/src/features/chat/hooks/.gitkeep.ts">
+// chat feature hooks
+</file>
+
+<file path="apps/web/src/features/chat/api.ts">
+// chat feature api calls via @zero-agent/sdk
+</file>
+
+<file path="apps/web/src/features/chat/store.ts">
+// chat feature state store
+</file>
+
+<file path="apps/web/src/lib/.gitkeep.ts">
+// web app lib utilities
+</file>
+
+<file path="apps/web/src/stores/.gitkeep.ts">
+// global stores for web app
+</file>
+
+<file path="apps/web/package.json">
+{
+  "name": "@zero-agent/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/sdk": "workspace:*",
+    "@zero-agent/ui": "workspace:*",
+    "@zero-agent/utils": "workspace:*",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}
+</file>
+
+<file path="apps/web/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "next-env.d.ts"]
+}
+</file>
+
+<file path="apps/worker/src/jobs/.gitkeep.ts">
+// jobs — email, scheduled tasks, etc.
+// Separate from agent-worker: these are deterministic background jobs,
+// not LLM-driven agent loops.
+</file>
+
+<file path="apps/worker/src/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("worker");
+
+logger.info("worker starting — generic async task processor");
+
+// TODO: subscribe to job queues via data-clients/queue
+// TODO: register job handlers from src/jobs/
+</file>
+
+<file path="apps/worker/package.json">
+{
+  "name": "@zero-agent/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="apps/worker/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="docs/adr/0001-monorepo-structure.md">
+# ADR-0001: Monorepo Structure & Dependency Boundaries
+
+## Status
+Accepted
+
+## Context
+We need a monorepo structure that supports multiple apps (web, api, agent-worker, worker) with clear dependency boundaries to prevent coupling.
+
+## Decision
+- pnpm workspaces + Turborepo for build orchestration
+- Dependency layers enforced via eslint-plugin-boundaries:
+  - L0: contracts, utils, config (no internal deps)
+  - L1: logger, observability, ui (L0 only)
+  - L2: data-clients, sdk (L0 + L1)
+  - L3: apps/* (L0–L2 packages, zero cross-app deps)
+- Contracts use zod schemas; types derived via z.infer
+- Cross-app communication: sync via sdk (HTTP), async via contracts/agent-events over MQ
+
+## Consequences
+- Hard boundary enforcement in CI, not just code review
+- Single source of truth for shared types (zod schemas)
+- Affected-scope checks detect boundary leaks early
+- Agent evals gate prompt/policy changes
+</file>
+
+<file path="infra/.gitkeep">
+// infra — docker-compose, k8s manifests, terraform, etc.
+</file>
+
+<file path="packages/config/src/index.ts">
+import { z } from "zod";
+
+const EnvSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PORT: z.coerce.number().default(3000),
+  DATABASE_URL: z.string().optional(),
+  REDIS_URL: z.string().optional(),
+  MQ_URL: z.string().optional(),
+});
+
+export type Env = z.infer<typeof EnvSchema>;
+
+export function loadEnv(): Env {
+  return EnvSchema.parse(process.env);
+}
+</file>
+
+<file path="packages/config/package.json">
+{
+  "name": "@zero-agent/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/config/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/contracts/src/agent-events/index.ts">
+import { z } from "zod";
+
+/**
+ * Async message contracts between api ↔ agent-worker over MQ.
+ * These are the ONLY contracts for cross-app async communication.
+ */
+export const AgentTaskRequestedSchema = z.object({
+  type: z.literal("agent.task.requested"),
+  payload: z.object({
+    taskId: z.string().uuid(),
+    userId: z.string().uuid(),
+    input: z.string(),
+    requestedAt: z.string().datetime(),
+  }),
+});
+
+export const AgentTaskCompletedSchema = z.object({
+  type: z.literal("agent.task.completed"),
+  payload: z.object({
+    taskId: z.string().uuid(),
+    result: z.string(),
+    completedAt: z.string().datetime(),
+  }),
+});
+
+export const AgentTaskFailedSchema = z.object({
+  type: z.literal("agent.task.failed"),
+  payload: z.object({
+    taskId: z.string().uuid(),
+    error: z.string(),
+    failedAt: z.string().datetime(),
+  }),
+});
+
+export const AgentEventSchema = z.discriminatedUnion("type", [
+  AgentTaskRequestedSchema,
+  AgentTaskCompletedSchema,
+  AgentTaskFailedSchema,
+]);
+
+export type AgentTaskRequested = z.infer<typeof AgentTaskRequestedSchema>;
+export type AgentTaskCompleted = z.infer<typeof AgentTaskCompletedSchema>;
+export type AgentTaskFailed = z.infer<typeof AgentTaskFailedSchema>;
+export type AgentEvent = z.infer<typeof AgentEventSchema>;
+</file>
+
+<file path="packages/contracts/src/chat/index.ts">
+import { z } from "zod";
+
+export const MessageSchema = z.object({
+  id: z.string().uuid(),
+  role: z.enum(["user", "assistant", "system"]),
+  content: z.string(),
+  createdAt: z.string().datetime(),
+});
+
+export const ChatSessionSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  messages: z.array(MessageSchema),
+  createdAt: z.string().datetime(),
+});
+
+export type Message = z.infer<typeof MessageSchema>;
+export type ChatSession = z.infer<typeof ChatSessionSchema>;
+</file>
+
+<file path="packages/contracts/src/user/index.ts">
+import { z } from "zod";
+
+export const UserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  name: z.string().min(1),
+  createdAt: z.string().datetime(),
+});
+
+export const CreateUserSchema = UserSchema.omit({ id: true, createdAt: true });
+
+export type User = z.infer<typeof UserSchema>;
+export type CreateUser = z.infer<typeof CreateUserSchema>;
+</file>
+
+<file path="packages/contracts/src/index.ts">
+/**
+ * Aggregated re-export — transition compatibility.
+ * Prefer importing from specific subpaths (e.g. @zero-agent/contracts/user).
+ */
+export * from "./user/index.js";
+export * from "./chat/index.js";
+export * from "./agent-events/index.js";
+</file>
+
+<file path="packages/contracts/package.json">
+{
+  "name": "@zero-agent/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./user": "./src/user/index.ts",
+    "./chat": "./src/chat/index.ts",
+    "./agent-events": "./src/agent-events/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  }
+}
+</file>
+
+<file path="packages/contracts/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/data-clients/src/cache/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("data-clients:cache");
+
+export interface CacheClient {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, ttlSeconds?: number): Promise<void>;
+  del(key: string): Promise<void>;
+}
+
+export function createCacheClient(url: string): CacheClient {
+  logger.info("cache client created", { url });
+  return {
+    async get(_key) { return null; },
+    async set(_key, _value, _ttlSeconds) {},
+    async del(_key) {},
+  };
+}
+</file>
+
+<file path="packages/data-clients/src/db/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("data-clients:db");
+
+export interface DbClient {
+  query<T>(sql: string, params?: unknown[]): Promise<T[]>;
+  execute(sql: string, params?: unknown[]): Promise<void>;
+}
+
+export function createDbClient(url: string): DbClient {
+  logger.info("db client created", { url: url.replace(/\/\/.*@/, "//***@") });
+  return {
+    async query<T>(_sql: string, _params?: unknown[]): Promise<T[]> {
+      throw new Error("not implemented — wire up your db driver");
+    },
+    async execute(_sql: string, _params?: unknown[]): Promise<void> {
+      throw new Error("not implemented — wire up your db driver");
+    },
+  };
+}
+</file>
+
+<file path="packages/data-clients/src/queue/index.ts">
+import { createLogger } from "@zero-agent/logger";
+
+const logger = createLogger("data-clients:queue");
+
+export interface QueueClient {
+  publish(channel: string, message: unknown): Promise<void>;
+  subscribe(channel: string, handler: (message: unknown) => void | Promise<void>): Promise<void>;
+}
+
+export function createQueueClient(url: string): QueueClient {
+  logger.info("queue client created", { url });
+  return {
+    async publish(_channel, _message) {
+      throw new Error("not implemented — wire up your MQ driver");
+    },
+    async subscribe(_channel, _handler) {
+      throw new Error("not implemented — wire up your MQ driver");
+    },
+  };
+}
+</file>
+
+<file path="packages/data-clients/src/index.ts">
+export * from "./db/index.js";
+export * from "./cache/index.js";
+export * from "./queue/index.js";
+</file>
+
+<file path="packages/data-clients/package.json">
+{
+  "name": "@zero-agent/data-clients",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./db": "./src/db/index.ts",
+    "./cache": "./src/cache/index.ts",
+    "./queue": "./src/queue/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/data-clients/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/logger/src/index.ts">
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
+export interface Logger {
+  debug(msg: string, meta?: Record<string, unknown>): void;
+  info(msg: string, meta?: Record<string, unknown>): void;
+  warn(msg: string, meta?: Record<string, unknown>): void;
+  error(msg: string, meta?: Record<string, unknown>): void;
+  child(bindings: Record<string, unknown>): Logger;
+}
+
+export function createLogger(name: string): Logger {
+  const format = (level: LogLevel, msg: string, meta?: Record<string, unknown>) =>
+    JSON.stringify({ level, name, msg, ...meta, ts: new Date().toISOString() });
+
+  return {
+    debug: (msg, meta) => console.debug(format("debug", msg, meta)),
+    info: (msg, meta) => console.info(format("info", msg, meta)),
+    warn: (msg, meta) => console.warn(format("warn", msg, meta)),
+    error: (msg, meta) => console.error(format("error", msg, meta)),
+    child(bindings) {
+      return createLogger(`${name}:${JSON.stringify(bindings)}`);
+    },
+  };
+}
+</file>
+
+<file path="packages/logger/package.json">
+{
+  "name": "@zero-agent/logger",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/logger/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/observability/src/index.ts">
+import { createLogger, type Logger } from "@zero-agent/logger";
+
+/**
+ * Unified trace/metrics facade.
+ * Agent decision steps should be traceable through this.
+ */
+
+export interface Span {
+  name: string;
+  end(status: "ok" | "error"): void;
+}
+
+const logger: Logger = createLogger("observability");
+
+export function startSpan(name: string, attributes?: Record<string, string>): Span {
+  logger.debug("span:start", { name, ...attributes });
+  return {
+    name,
+    end(status) {
+      logger.debug("span:end", { name, status });
+    },
+  };
+}
+
+export function recordMetric(name: string, value: number, tags?: Record<string, string>): void {
+  logger.debug("metric", { name, value, ...tags });
+}
+
+export function recordError(error: Error, context?: Record<string, unknown>): void {
+  logger.error(error.message, { stack: error.stack, ...context });
+}
+</file>
+
+<file path="packages/observability/package.json">
+{
+  "name": "@zero-agent/observability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/config": "workspace:*",
+    "@zero-agent/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/observability/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/sdk/src/index.ts">
+import { startSpan } from "@zero-agent/observability";
+
+export interface ApiClient {
+  baseUrl: string;
+  get<T>(path: string): Promise<T>;
+  post<T>(path: string, body: unknown): Promise<T>;
+}
+
+export function createApiClient(baseUrl: string): ApiClient {
+  return {
+    baseUrl,
+    async get<T>(path: string): Promise<T> {
+      const span = startSpan("sdk.get", { path });
+      try {
+        const res = await fetch(`${baseUrl}${path}`);
+        if (!res.ok) throw new Error(`GET ${path} → ${res.status}`);
+        return res.json() as Promise<T>;
+      } finally {
+        span.end("ok");
+      }
+    },
+    async post<T>(path: string, body: unknown): Promise<T> {
+      const span = startSpan("sdk.post", { path });
+      try {
+        const res = await fetch(`${baseUrl}${path}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error(`POST ${path} → ${res.status}`);
+        return res.json() as Promise<T>;
+      } finally {
+        span.end("ok");
+      }
+    },
+  };
+}
+</file>
+
+<file path="packages/sdk/package.json">
+{
+  "name": "@zero-agent/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/observability": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/sdk/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/ui/src/index.ts">
+// Shared UI primitives — placeholder
+export {};
+</file>
+
+<file path="packages/ui/package.json">
+{
+  "name": "@zero-agent/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
+</file>
+
+<file path="packages/ui/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react-jsx"
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="packages/utils/src/index.ts">
+export function assertNever(value: never, message?: string): never {
+  throw new Error(message ?? `Unexpected value: ${value}`);
+}
+
+export function isNonNullable<T>(value: T): value is NonNullable<T> {
+  return value != null;
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+</file>
+
+<file path="packages/utils/package.json">
+{
+  "name": "@zero-agent/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
+</file>
+
+<file path="packages/utils/tsconfig.json">
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+</file>
+
+<file path="scripts/check-boundaries.ts">
+/**
+ * CI boundary check — runs ESLint with boundary rules across the workspace.
+ * Also validates turbo affected scope: if a change in one domain triggers
+ * builds in unrelated apps, the boundary is leaking.
+ */
+import { execSync } from "node:child_process";
+import { exit } from "node:process";
+
+function run(cmd: string): string {
+  return execSync(cmd, { encoding: "utf-8", stdio: "pipe" });
+}
+
+let failed = false;
+
+// 1. ESLint boundary rules
+console.log("── ESLint boundary check ──");
+try {
+  run("pnpm eslint . --no-warn-ignored");
+  console.log("✓ no boundary violations\n");
+} catch (e: unknown) {
+  console.error((e as { stdout?: string }).stdout ?? String(e));
+  failed = true;
+}
+
+// 2. Affected-scope sanity check (only meaningful in CI with HEAD^)
+console.log("── Affected scope check ──");
+try {
+  const affected = run("pnpm turbo build --filter=...[HEAD^] --dry=json");
+  const plan = JSON.parse(affected) as { packages: string[] };
+  const apps = plan.packages.filter((p) => p.startsWith("app-") || p.startsWith("@zero-agent/"));
+  console.log(`affected packages: ${plan.packages.join(", ")}`);
+  if (apps.length > 2) {
+    console.warn(
+      `⚠ ${apps.length} apps affected — possible boundary leak. Review dependency graph.`,
+    );
+  } else {
+    console.log("✓ scope looks clean\n");
+  }
+} catch {
+  console.log("⚠ turbo dry-run skipped (no git history or turbo not built)\n");
+}
+
+if (failed) exit(1);
+</file>
+
+<file path=".gitignore">
+node_modules
+dist
+.next
+.turbo
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+</file>
+
+<file path="CODEOWNERS">
+# Domain ownership — aligns with monorepo boundary rules
+# Each domain has clear owners; cross-domain changes need approval from all affected owners.
+
+# Root config
+/package.json                          @zero-agent/platform
+/turbo.json                            @zero-agent/platform
+/tsconfig.base.json                    @zero-agent/platform
+/pnpm-workspace.yaml                   @zero-agent/platform
+/eslint.config.js                      @zero-agent/platform
+
+# Apps
+/apps/web/                             @zero-agent/frontend
+/apps/api/                             @zero-agent/backend
+/apps/agent-worker/                    @zero-agent/ai
+/apps/worker/                          @zero-agent/backend
+
+# Shared packages
+/packages/contracts/                   @zero-agent/platform
+/packages/data-clients/                @zero-agent/platform
+/packages/sdk/                         @zero-agent/platform
+/packages/ui/                          @zero-agent/frontend
+/packages/config/                      @zero-agent/platform
+/packages/logger/                      @zero-agent/platform
+/packages/observability/               @zero-agent/platform
+/packages/utils/                       @zero-agent/platform
+
+# Infra & CI
+/infra/                                @zero-agent/platform
+/scripts/                              @zero-agent/platform
+/.github/                              @zero-agent/platform
+</file>
+
+<file path="eslint.config.js">
+// @ts-check
+import boundaries from "eslint-plugin-boundaries";
+
+/**
+ * Dependency layer rules (enforced in CI):
+ *
+ * L0  contracts, utils, config        → no internal deps
+ * L1  logger, observability, ui        → L0 only
+ * L2  data-clients, sdk                → L0 + L1
+ * L3  apps/*                           → L0–L2 packages, zero cross-app deps
+ */
+export default [
+  {
+    plugins: { boundaries },
+    settings: {
+      "boundaries/elements": [
+        // L0 — base
+        { type: "pkg-contracts", pattern: "packages/contracts/*" },
+        { type: "pkg-utils", pattern: "packages/utils/*" },
+        { type: "pkg-config", pattern: "packages/config/*" },
+        // L1
+        { type: "pkg-logger", pattern: "packages/logger/*" },
+        { type: "pkg-observability", pattern: "packages/observability/*" },
+        { type: "pkg-ui", pattern: "packages/ui/*" },
+        // L2
+        { type: "pkg-data-clients", pattern: "packages/data-clients/*" },
+        { type: "pkg-sdk", pattern: "packages/sdk/*" },
+        // L3 — apps
+        { type: "app-web", pattern: "apps/web/*" },
+        { type: "app-api", pattern: "apps/api/*" },
+        { type: "app-agent-worker", pattern: "apps/agent-worker/*" },
+        { type: "app-worker", pattern: "apps/worker/*" },
+      ],
+    },
+    rules: {
+      "boundaries/element-types": [
+        "error",
+        {
+          default: "disallow",
+          rules: [
+            // L0: no internal deps
+            { from: "pkg-contracts", allow: [] },
+            { from: "pkg-utils", allow: [] },
+            { from: "pkg-config", allow: [] },
+            // L1: only L0
+            { from: "pkg-logger", allow: ["pkg-contracts", "pkg-utils", "pkg-config"] },
+            { from: "pkg-observability", allow: ["pkg-contracts", "pkg-utils", "pkg-config"] },
+            { from: "pkg-ui", allow: ["pkg-contracts", "pkg-utils", "pkg-config"] },
+            // L2: L0 + L1
+            {
+              from: "pkg-data-clients",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+              ],
+            },
+            {
+              from: "pkg-sdk",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+              ],
+            },
+            // L3: apps can depend on any package, but NOT on each other
+            {
+              from: "app-web",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability", "pkg-ui",
+                "pkg-data-clients", "pkg-sdk",
+              ],
+            },
+            {
+              from: "app-api",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-data-clients", "pkg-sdk",
+              ],
+            },
+            {
+              from: "app-agent-worker",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-data-clients", "pkg-sdk",
+              ],
+            },
+            {
+              from: "app-worker",
+              allow: [
+                "pkg-contracts", "pkg-utils", "pkg-config",
+                "pkg-logger", "pkg-observability",
+                "pkg-data-clients", "pkg-sdk",
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
+];
+</file>
+
+<file path="package.json">
+{
+  "name": "zero-agent",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "check-boundaries": "tsx scripts/check-boundaries.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "eslint": "^9.16.0",
+    "eslint-plugin-boundaries": "^2.1.0",
+    "tsx": "^4.19.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}
+</file>
+
+<file path="pnpm-workspace.yaml">
+packages:
+  - "apps/*"
+  - "packages/*"
+</file>
+
+<file path="tsconfig.base.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "exclude": ["node_modules", "dist"]
+}
+</file>
+
+<file path="turbo.json">
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    }
+  }
+}
+</file>
+
+</files>

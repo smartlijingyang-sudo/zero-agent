@@ -1,0 +1,27 @@
+{
+  "name": "@zero-agent/agent-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "evals": "vitest run --config vitest.evals.config.ts"
+  },
+  "dependencies": {
+    "@zero-agent/contracts": "workspace:*",
+    "@zero-agent/data-clients": "workspace:*",
+    "@zero-agent/sdk": "workspace:*",
+    "@zero-agent/logger": "workspace:*",
+    "@zero-agent/observability": "workspace:*",
+    "@zero-agent/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -1,0 +1,30 @@
+# Domain ownership — aligns with monorepo boundary rules
+# Each domain has clear owners; cross-domain changes need approval from all affected owners.
+
+# Root config
+/package.json                          @zero-agent/platform
+/turbo.json                            @zero-agent/platform
+/tsconfig.base.json                    @zero-agent/platform
+/pnpm-workspace.yaml                   @zero-agent/platform
+/eslint.config.js                      @zero-agent/platform
+
+# Apps
+/apps/web/                             @zero-agent/frontend
+/apps/api/                             @zero-agent/backend
+/apps/agent-worker/                    @zero-agent/ai
+/apps/worker/                          @zero-agent/backend
+
+# Shared packages
+/packages/contracts/                   @zero-agent/platform
+/packages/data-clients/                @zero-agent/platform
+/packages/sdk/                         @zero-agent/platform
+/packages/ui/                          @zero-agent/frontend
+/packages/config/                      @zero-agent/platform
+/packages/logger/                      @zero-agent/platform
+/packages/observability/               @zero-agent/platform
+/packages/utils/                       @zero-agent/platform
+
+# Infra & CI
+/infra/                                @zero-agent/platform
+/scripts/                              @zero-agent/platform
+/.github/                              @zero-agent/platform
